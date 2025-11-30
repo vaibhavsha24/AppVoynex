@@ -33,7 +33,7 @@ class HomeViewModel(
         loadHomeContent()
     }
 
-    private fun loadHomeContent() {
+    fun loadHomeContent() {
         viewModelScope.launch {
             _uiState.value = HomeUiState(loading = true)
             try {

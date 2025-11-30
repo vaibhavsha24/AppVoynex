@@ -57,8 +57,9 @@ fun HomeScreen(onDestinationClick: (String) -> Unit, factory: ViewModelFactory,o
                 Spacer(Modifier.height(16.dp))
             }
         }else if (uiState.error != null) {
-            Text("Error: ${uiState.error}", color = MaterialTheme.colorScheme.error)
-
+            ErrorScreen {
+                viewModel.loadHomeContent()
+            }
         } else {
             Scaffold(
                 topBar = {

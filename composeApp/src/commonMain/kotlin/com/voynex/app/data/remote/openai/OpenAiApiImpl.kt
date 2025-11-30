@@ -51,7 +51,7 @@ class OpenAiApiImpl : OpenAiApi {
         )
         println("Prompt: $request")
 
-        val response: GenerateContentResponse = client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent") {
+        val response: GenerateContentResponse = client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent") {
             headers {
                 append("x-goog-api-key", apiKey)
             }

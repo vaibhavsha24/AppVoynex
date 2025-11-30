@@ -17,12 +17,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -80,7 +82,9 @@ fun ItineraryScreen(tripInput: TripInput, factory: ViewModelFactory) {
                 }
             }
             uiState.error != null -> {
-                Text("Error: ${uiState.error}", color = MaterialTheme.colorScheme.error)
+                ErrorScreen {
+                    viewModel.generateItinerary(tripInput)
+                }
             }
             else -> {
                 uiState.itinerary?.let {itinerary->
@@ -508,5 +512,40 @@ fun BudgetCard(b: BudgetBreakdown) {
             SummaryRow("💰 Total", b.totalEstimatedCost)
         }
     }
+}
+
+@Composable
+fun ErrorScreen(
+    retryLabel: String = "Retry",
+    isRetrying: Boolean = false,
+    onRetry: () -> Unit
+) {
+        Column(
+            modifier = Modifier
+                .background(Color.White)
+                .fillMaxSize()
+                .padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+
+            // Lottie (if available) with semantic label for accessibility
+            LottieIcon(
+                filePath = "files/error.json",
+                modifier = Modifier.wrapContentSize()
+            )
+            Spacer(Modifier.height(16.dp))
+
+            Button(
+                onClick = { if (!isRetrying) onRetry() },
+                enabled = !isRetrying,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .height(48.dp)
+                    .fillMaxWidth(0.6f)
+            ) {
+                Text(text = retryLabel)
+            }
+        }
 }
 
