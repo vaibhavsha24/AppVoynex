@@ -1,5 +1,6 @@
 package com.voynex.app.data.remote.openai
 
+import com.voynex.app.data.remote.ApiKey // Import the ApiKey
 import com.voynex.app.data.remote.pexels.httpClientEngine
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -37,7 +38,7 @@ class OpenAiApiImpl : OpenAiApi {
     }
 
     override suspend fun generateItinerary(prompt: String): ItineraryResponse {
-        val apiKey = "AIzaSyBCjs2Sg4-H8FssRN72_Lck2a-2JkpeuPA"
+        val apiKey = ApiKey // Use the ApiKey
 
         val request = GenerateContentRequest(
             contents = listOf(
@@ -50,7 +51,7 @@ class OpenAiApiImpl : OpenAiApi {
         )
         println("Prompt: $request")
 
-        val response: GenerateContentResponse = client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent") {
+        val response: GenerateContentResponse = client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent") {
             headers {
                 append("x-goog-api-key", apiKey)
             }

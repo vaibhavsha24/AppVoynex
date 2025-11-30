@@ -1,6 +1,8 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
+import java.io.FileInputStream
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -8,6 +10,14 @@ plugins {
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlin.serialization)
+}
+
+val localProperties by lazy {
+    Properties().apply {
+        rootProject.file("local.properties").takeIf { it.exists() }?.let {
+            load(FileInputStream(it))
+        }
+    }
 }
 
 kotlin {
@@ -97,6 +107,8 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 2
         versionName = "1.0"
+
+        buildConfigField("String", "API_KEY", "\"${localProperties.getProperty("API_KEY") ?: ""}\"")
     }
     packaging {
         resources {
@@ -113,9 +125,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    buildFeatures {
+        buildConfig = true
+    }
 }
 
 dependencies {
     debugImplementation(compose.uiTooling)
 }
-
