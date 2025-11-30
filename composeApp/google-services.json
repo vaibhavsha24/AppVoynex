@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "672914130724",
+    "project_id": "voynex-742f3",
+    "storage_bucket": "voynex-742f3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:672914130724:android:a3931216dff4fac1cad5b1",
+        "android_client_info": {
+          "package_name": "com.voynex.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDk1muYyzeuroEfcPrMKQMK47_0iI5bwb8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
