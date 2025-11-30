@@ -70,7 +70,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.voynex.app.domain.model.monthLength
-import com.voynex.app.preferences.createSettings
 import com.voynex.app.ui.common.ViewModelFactory
 import io.kamel.image.KamelImage
 import io.kamel.image.asyncPainterResource
@@ -462,29 +461,6 @@ fun NumberSelector(title: String, value: Int, onValueChange: (Int) -> Unit) {
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewPlanTripScreen() {
-    val settings = createSettings()
-    val viewModelFactory = ViewModelFactory(settings)
-    PlanTripScreen("Jaipur", viewModelFactory,onGeneratePlan = { })
-}
-/*
-Premium Date Range Picker UI in Jetpack Compose
-- Departure and Return cards (rounded, elevated)
-- Smooth dialog with month carousel, day grid, range highlighting
-- Works with Java Time (LocalDate / YearMonth)
-- Material3 ready
-
-Usage:
-DateRangePickerSample()
-
-Dependencies:
-implementation "androidx.compose.material3:material3:<latest>"
-implementation "org.jetbrains.kotlinx:kotlinx-datetime:<optional>" // if you prefer
-
-Minimum API: 26 (for java.time). For lower, add ThreeTenABP or use kotlinx-datetime.
-*/
 @Composable
 fun PremiumDateRangePicker(
     initialStart: LocalDate,

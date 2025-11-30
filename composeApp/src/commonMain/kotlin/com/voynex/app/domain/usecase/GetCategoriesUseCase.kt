@@ -167,3 +167,14 @@ class GetCategoryDestinationsUseCase(private val repository: DestinationImagesRe
         }
     }
 }
+class GetSavedItinerary(private val repository: DestinationImagesRepository){
+
+    suspend operator fun invoke():List<Category> = withContext(Dispatchers.Default) {
+        val list = repository.getSavedItinerary()
+        list.map {
+            val imageUrl = repository.getCoverImage(it)
+            Category(it, imageUrl ?: "")
+        }
+
+    }
+}

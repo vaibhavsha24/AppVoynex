@@ -28,8 +28,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.voynex.app.domain.model.Itinerary
 import com.voynex.app.domain.usecase.Category
 import com.voynex.app.domain.usecase.HomeDestination
+import com.voynex.app.preferences.SharedPref
 import com.voynex.app.ui.common.ViewModelFactory
 import io.github.alexzhirkevich.compottie.LottieCompositionSpec
 import io.github.alexzhirkevich.compottie.animateLottieCompositionAsState
@@ -41,7 +43,7 @@ import org.jetbrains.compose.resources.painterResource
 import voynex.composeapp.generated.resources.Res
 
 @Composable
-fun HomeScreen(onDestinationClick: (String) -> Unit, factory: ViewModelFactory,onCategoryClick:(String) ->Unit) {
+fun HomeScreen(onDestinationClick: (String) -> Unit, factory: ViewModelFactory,onCategoryClick:(String) ->Unit,onSavedItineraryClick:(Itinerary)->Unit) {
     val viewModel: HomeViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
@@ -91,7 +93,27 @@ fun HomeScreen(onDestinationClick: (String) -> Unit, factory: ViewModelFactory,o
                         )
                         Spacer(Modifier.height(16.dp))
                     }
-
+                    item {
+                        if(uiState.savedItinerary.isNotEmpty()) {
+                            Text(
+                                "Saved Itinerary",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Spacer(Modifier.height(8.dp))
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                items(uiState.savedItinerary) { savedItinerary ->
+                                    CategoryCard(savedItinerary,) {
+                                        val itinerary = viewModel.getItinerary(savedItinerary.name)
+                                        itinerary?.let {
+                                            onSavedItineraryClick.invoke(itinerary)
+                                        }
+                                    }
+                                }
+                            }
+                            Spacer(Modifier.height(16.dp))
+                        }
+                    }
                     item {
                         Text("Categories", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                         Spacer(Modifier.height(8.dp))

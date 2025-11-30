@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -54,6 +55,8 @@ import com.voynex.app.domain.model.PackagingAndSafety
 import com.voynex.app.domain.model.TimelineItem
 import com.voynex.app.domain.model.TransportationPlan
 import com.voynex.app.domain.model.TripSummary
+import com.voynex.app.domain.usecase.GetSavedItinerary
+import com.voynex.app.preferences.SharedPref
 import com.voynex.app.ui.common.ViewModelFactory
 import org.jetbrains.compose.resources.painterResource
 import voynex.composeapp.generated.resources.Res
@@ -61,12 +64,16 @@ import voynex.composeapp.generated.resources.circle
 
 
 @Composable
-fun ItineraryScreen(tripInput: TripInput, factory: ViewModelFactory) {
+fun ItineraryScreen(tripInput: TripInput?, factory: ViewModelFactory,savedItineraryDestination: String?=null) {
     val viewModel: ItineraryViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.generateItinerary(tripInput)
+        if(tripInput!=null){
+            viewModel.generateItinerary(tripInput)
+        }else if (savedItineraryDestination!=null){
+            viewModel.generateSavedItinerary(savedItineraryDestination)
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -83,12 +90,16 @@ fun ItineraryScreen(tripInput: TripInput, factory: ViewModelFactory) {
             }
             uiState.error != null -> {
                 ErrorScreen {
-                    viewModel.generateItinerary(tripInput)
+                    tripInput?.let {
+                        viewModel.generateItinerary(tripInput)
+                    }
                 }
             }
             else -> {
                 uiState.itinerary?.let {itinerary->
-                    ItineraryScreenUI(itinerary)
+                    ItineraryScreenUI(itinerary, showSaveButton = savedItineraryDestination==null){
+                        viewModel.saveOffline()
+                    }
                 }
             }
         }
@@ -98,7 +109,7 @@ fun ItineraryScreen(tripInput: TripInput, factory: ViewModelFactory) {
 //        MAIN SCREEN
 // ------
 @Composable
-fun ItineraryScreenUI(itinerary: Itinerary) {
+fun ItineraryScreenUI(itinerary: Itinerary,showSaveButton:Boolean,download:()->Unit,) {
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -121,7 +132,24 @@ fun ItineraryScreenUI(itinerary: Itinerary) {
                     )
                 }
             }
+        },
+        bottomBar = {
+            if(showSaveButton) {
+                Button(
+                    onClick = {
+                        download.invoke()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(WindowInsets.navigationBars.asPaddingValues())
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("Download Offline")
+                }
+            }
         }
+
 
     ) { padding ->
 

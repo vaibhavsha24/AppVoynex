@@ -2,6 +2,8 @@ package com.voynex.app.navigation
 
 
 import androidx.compose.runtime.Composable
+import com.voynex.app.domain.model.Itinerary
+import com.voynex.app.preferences.SharedPref
 import com.voynex.app.ui.AppTheme
 import com.voynex.app.ui.HomeScreen
 import com.voynex.app.ui.ItineraryScreen
@@ -45,7 +47,10 @@ fun App(factory: ViewModelFactory) {
                     onCategoryClick = {category->
                         navigator.navigate("/category/$category")
                     },
-                    factory = factory
+                    factory = factory,
+                    onSavedItineraryClick = {
+                        navigator.navigate("/itinerarySaved/${it.tripSummary.destination}")
+                    }
                 )
             }
             scene("/category/{category}") {backStackEntry->
@@ -73,6 +78,12 @@ fun App(factory: ViewModelFactory) {
                 if (tripInputJson != null) {
                     val tripInput = Json.decodeFromString(TripInput.serializer(), tripInputJson)
                     ItineraryScreen(tripInput = tripInput, factory = factory)
+                }
+            }
+            scene("/itinerarySaved/{destination}") { backStackEntry ->
+                val itinerarySavedJson = backStackEntry.path<String>("destination") ?: ""
+                if (itinerarySavedJson != null) {
+                    ItineraryScreen(tripInput = null, factory = factory,itinerarySavedJson)
                 }
             }
         }

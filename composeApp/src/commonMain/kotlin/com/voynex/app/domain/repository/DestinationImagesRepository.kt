@@ -16,4 +16,6 @@ interface DestinationImagesRepository {
      * Implements caching.
      */
     suspend fun getDestinationPhotos(destination: String): List<String>
+
+    suspend fun getSavedItinerary():List<String>
 }

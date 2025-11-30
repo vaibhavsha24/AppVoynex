@@ -50,6 +50,8 @@ kotlin {
             implementation(libs.lottie.compose)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.ktor.client.core)
+            implementation("com.google.code.gson:gson:2.10.1")
+
         }
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
