@@ -1,7 +1,10 @@
 package com.voynex.app.domain.usecase
 
+import com.voynex.app.domain.repository.DestinationImagesRepository
 import com.voynex.app.domain.repository.ItineraryRepository
 import com.voynex.app.ui.TripInput
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class GenerateItineraryUseCase(private val repository: ItineraryRepository) {
     suspend operator fun invoke(tripInput: TripInput): String {
@@ -99,5 +102,12 @@ class GenerateItineraryUseCase(private val repository: ItineraryRepository) {
         """.trimIndent()
 
         return repository.generateItinerary(prompt)
+    }
+}
+class GetCoverImage(private val repository: DestinationImagesRepository){
+
+    suspend operator fun invoke(destination:String):Category = withContext(Dispatchers.Default) {
+        val imageUrl = repository.getCoverImage(destination)
+        Category(destination, imageUrl ?: "")
     }
 }

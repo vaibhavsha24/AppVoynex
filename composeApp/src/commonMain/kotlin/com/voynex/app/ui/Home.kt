@@ -47,7 +47,8 @@ fun HomeScreen(onDestinationClick: (String) -> Unit, factory: ViewModelFactory,o
     val viewModel: HomeViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
-
+    val screenWidth = GetScreenSizeInDp().first    // 70% of screen width
+    val cardHeight = screenWidth
     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         if (uiState.loading) {
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -101,14 +102,28 @@ fun HomeScreen(onDestinationClick: (String) -> Unit, factory: ViewModelFactory,o
                                 fontWeight = FontWeight.Bold
                             )
                             Spacer(Modifier.height(8.dp))
-                            LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                                 items(uiState.savedItinerary) { savedItinerary ->
-                                    CategoryCard(savedItinerary,) {
-                                        val itinerary = viewModel.getItinerary(savedItinerary.name)
-                                        itinerary?.let {
-                                            onSavedItineraryClick.invoke(itinerary)
-                                        }
-                                    }
+                                    CategoryCard(modifier = Modifier
+                                        .height(cardHeight*0.6f)
+                                        .padding(end = 16.dp)
+                                        .shadow(
+                                            elevation = 8.dp,
+                                            shape = RoundedCornerShape(18.dp),
+                                            ambientColor = Color(0x22000000),
+                                            spotColor = Color(0x22000000)
+                                        )
+                                        .background(
+                                            color = MaterialTheme.colorScheme.surface,
+                                            shape = RoundedCornerShape(18.dp)
+                                        )
+                                        .clickable {
+
+                                            val itinerary = viewModel.getItinerary(savedItinerary.name)
+                                            itinerary?.let {
+                                                onSavedItineraryClick.invoke(itinerary)
+                                            }
+                                        },savedItinerary,screenWidth*0.9f,cardHeight*0.6f)
                                 }
                             }
                             Spacer(Modifier.height(16.dp))
@@ -119,7 +134,27 @@ fun HomeScreen(onDestinationClick: (String) -> Unit, factory: ViewModelFactory,o
                         Spacer(Modifier.height(8.dp))
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             items(uiState.categories) { category ->
-                                CategoryCard(category, onCategoryClick)
+                                CategoryCard(modifier = Modifier
+                                    .height(cardHeight * 0.55f)
+                                    .padding(end = 16.dp)
+                                    .shadow(
+                                        elevation = 8.dp,
+                                        shape = RoundedCornerShape(18.dp),
+                                        ambientColor = Color(0x22000000),
+                                        spotColor = Color(0x22000000)
+                                    )
+                                    .background(
+                                        color = MaterialTheme.colorScheme.surface,
+                                        shape = RoundedCornerShape(18.dp)
+                                    )
+                                    .clickable {
+
+                                        val itinerary = viewModel.getItinerary(category.name)
+                                        itinerary?.let {
+                                            onSavedItineraryClick.invoke(itinerary)
+                                        }
+                                    },category,screenWidth* 0.6f ,cardHeight * 0.55f)
+
                             }
                         }
                         Spacer(Modifier.height(16.dp))
@@ -206,28 +241,13 @@ fun SearchLottieIcon(modifier: Modifier = Modifier) {
     )
 }
 
-@Composable
-fun CategoryCard(category: Category, onClick: (String) -> Unit) {
-    val cardWidth = GetScreenSizeInDp().first * 0.6f    // 70% of screen width
-    val cardHeight = cardWidth * 0.55f
-    Card(
-        modifier =  Modifier
-            .height(cardHeight)
-            .padding(end = 16.dp)
-            .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(18.dp),
-                ambientColor = Color(0x22000000),
-                spotColor = Color(0x22000000)
-            )
-            .background(
-                color = MaterialTheme.colorScheme.surface,
-                shape = RoundedCornerShape(18.dp)
-            )
-            .clickable { onClick(category.name)
 
-    },
-        shape = RoundedCornerShape(16.dp)
+@Composable
+fun CategoryCard(modifier: Modifier,category: Category,cardWidth:Dp,cardHeight:Dp) {
+
+    Card(
+        modifier =  modifier,
+        shape = RoundedCornerShape(32.dp)
     ) {
         Box(modifier = Modifier) {
             KamelImage(
@@ -252,7 +272,7 @@ fun CategoryCard(category: Category, onClick: (String) -> Unit) {
                 text = category.name,
                 color = MaterialTheme.colorScheme.surface,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(12.dp)
+                modifier = Modifier.align(Alignment.BottomStart).padding(32.dp)
             )
         }
     }
@@ -263,9 +283,9 @@ fun DestinationCard(destination: HomeDestination, onClick: (String) -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
+            .height(300.dp)
             .clickable { onClick(destination.name) },
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(32.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             KamelImage(
@@ -290,7 +310,7 @@ fun DestinationCard(destination: HomeDestination, onClick: (String) -> Unit) {
                 color = Color.White,
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.align(Alignment.BottomStart).padding(16.dp)
+                modifier = Modifier.align(Alignment.BottomStart).padding(32.dp)
             )
         }
     }

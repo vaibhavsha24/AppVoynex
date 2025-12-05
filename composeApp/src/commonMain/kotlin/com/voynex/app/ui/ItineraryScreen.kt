@@ -1,6 +1,12 @@
 package com.voynex.app.ui
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -20,30 +26,47 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.CircularProgressIndicator
+import androidx.compose.material.Divider
+import androidx.compose.material.Surface
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Divider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.min
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.voynex.app.domain.model.BudgetBreakdown
@@ -55,18 +78,28 @@ import com.voynex.app.domain.model.PackagingAndSafety
 import com.voynex.app.domain.model.TimelineItem
 import com.voynex.app.domain.model.TransportationPlan
 import com.voynex.app.domain.model.TripSummary
-import com.voynex.app.domain.usecase.GetSavedItinerary
-import com.voynex.app.preferences.SharedPref
 import com.voynex.app.ui.common.ViewModelFactory
+import io.kamel.image.KamelImage
+import io.kamel.image.asyncPainterResource
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.painterResource
 import voynex.composeapp.generated.resources.Res
 import voynex.composeapp.generated.resources.circle
+import voynex.composeapp.generated.resources.hotel
+import voynex.composeapp.generated.resources.ic_budget
+import voynex.composeapp.generated.resources.ic_food
+import voynex.composeapp.generated.resources.ic_itinerary
+import voynex.composeapp.generated.resources.ic_packing
+import voynex.composeapp.generated.resources.ic_transport
+import kotlin.math.min
 
 
 @Composable
 fun ItineraryScreen(tripInput: TripInput?, factory: ViewModelFactory,savedItineraryDestination: String?=null) {
     val viewModel: ItineraryViewModel = viewModel(factory = factory)
     val uiState by viewModel.uiState.collectAsState()
+
+    var isSaved by remember { mutableStateOf(savedItineraryDestination != null) }
 
     LaunchedEffect(Unit) {
         if(tripInput!=null){
@@ -97,104 +130,163 @@ fun ItineraryScreen(tripInput: TripInput?, factory: ViewModelFactory,savedItiner
             }
             else -> {
                 uiState.itinerary?.let {itinerary->
-                    ItineraryScreenUI(itinerary, showSaveButton = savedItineraryDestination==null){
-                        viewModel.saveOffline()
+                    ItineraryScreenUI(itinerary, showSaveButton = !isSaved){
+                        if(!isSaved){
+                            viewModel.saveOffline()
+                            isSaved = true
+                        }else{
+                            viewModel.deleteOffline()
+                            isSaved = false
+                        }
                     }
                 }
             }
         }
     }
 }
+
+@Composable
+fun CollapsingImageHeader(
+    imageUrl: String,
+    scroll: LazyListState,
+    maxHeight: Dp = 300.dp,
+) {
+    val collapseHeightPx = with(LocalDensity.current) { maxHeight.toPx() }
+    val offset = min(scroll.firstVisibleItemScrollOffset.toFloat(), collapseHeightPx)
+
+    val height by animateDpAsState(
+        targetValue = maxHeight - (offset / 2).dp,  // smooth collapse
+        animationSpec = tween(200), label = ""
+    )
+
+    KamelImage(
+        resource = { asyncPainterResource(imageUrl) },
+        contentDescription = null,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)              // collapses as you scroll
+            .clip(RoundedCornerShape(bottomStart = 20.dp, bottomEnd = 20.dp)),
+        contentScale = ContentScale.Crop,
+        onLoading = { CircularProgressIndicator(Modifier.size(32.dp)) }
+    )
+}
+
 // ---------------------------------------------------------
 //        MAIN SCREEN
 // ------
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ItineraryScreenUI(itinerary: Itinerary,showSaveButton:Boolean,download:()->Unit,) {
+fun ItineraryScreenUI(
+    itinerary: Itinerary,
+    showSaveButton: Boolean,
+    download: () -> Unit,
+) {
+    var selectedTab by remember { mutableStateOf(0) }
+    val scrollState = rememberLazyListState()
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-
         topBar = {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(WindowInsets.statusBars.asPaddingValues())
-                    .padding(top = 16.dp, start = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Column {
-                    Text(
-                        "Your Itinerary",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
+            Column {
+                itinerary.tripSummary.coverImage?.let { coverImage ->
+                    CollapsingImageHeader(
+                        imageUrl = coverImage,  // <-- your image string here
+                        scroll = scrollState
+                    )
+
+
+                }
+                Surface(color = MaterialTheme.colorScheme.background) {
+                    CircularIconTabBar(
+                        selectedIndex = selectedTab,
+                        onTabSelected = { selectedTab = it }
                     )
                 }
             }
+
         },
         bottomBar = {
-            if(showSaveButton) {
-                Button(
-                    onClick = {
-                        download.invoke()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(WindowInsets.navigationBars.asPaddingValues())
-                        .padding(16.dp),
-                    shape = RoundedCornerShape(16.dp)
-                ) {
-                    Text("Download Offline")
-                }
+            Button(
+                onClick = download,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text(if (showSaveButton) "Download Offline" else "Delete Itinerary")
             }
         }
-
-
     ) { padding ->
 
         LazyColumn(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            state = scrollState,
+            modifier = Modifier.padding(padding).padding(16.dp)
         ) {
-            item {
-                TripSummaryCard(itinerary.tripSummary)
+
+            // 🔥 COLAPSING IMAGE HEADER
+
+
+
+            // 🔥 STICKY TABS AFTER HEADER
+            item{
+                Spacer(Modifier.height(2.dp))
             }
 
-            item {
-                GradientHeader("Day-wise Itinerary", "📅")
-            }
-            itemsIndexed(itinerary.daywiseItinerary) { _, day ->
-                DayCard(day)
+            // TAB CONTENT BELOW (unchanged)
+            when(selectedTab) {
+
+                // 1️⃣ Day-wise Itinerary
+                0 -> {
+                    item{
+                        TripSummaryCard(itinerary.tripSummary)
+                        Spacer(Modifier.height(8.dp))
+                    }
+                    itemsIndexed(itinerary.daywiseItinerary) { _, day ->
+                        DayCard(day)
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+
+                // 2️⃣ Hotels
+                1 -> {
+                    items(itinerary.hotelRecommendations) {
+                        HotelCard(it)
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+
+                // 3️⃣ Transport (SEPARATED 🔥)
+                2 -> {
+                    item {
+                        TransportCard(itinerary.transportationPlan)
+                        Spacer(Modifier.height(10.dp))
+                    }
+                }
+
+                // 4️⃣ Food — Day Wise Separation 🥗
+                3 -> {
+                    itemsIndexed(itinerary.daywiseItinerary) { index, day ->
+                        GradientHeader("Day ${index+1} Food", "🍽")
+                        Spacer(Modifier.height(10.dp))
+                        day.foodRecommendations.forEach {
+                            FoodCard(it)
+                            Spacer(Modifier.height(8.dp))
+                        }
+                    }
+                }
+
+                // 5️⃣ Packing and Safety (Dedicated Tab)
+                4 -> {
+                    item { PackingSafetyCard(itinerary.packagingAndSafety)
+                        Spacer(Modifier.height(8.dp))
+                    }
+                }
+
+                // 6️⃣ Budget
+                5 -> {
+                    item { BudgetCard(itinerary.budgetBreakdown) }
+                }
             }
 
-            item {
-                GradientHeader("Hotels", "🏨")
-            }
-            itemsIndexed(itinerary.hotelRecommendations) { _, hotel ->
-                HotelCard(hotel)
-            }
-
-            item {
-                GradientHeader("Transportation", "🚗")
-                Spacer(Modifier.height(20.dp))
-                TransportCard(itinerary.transportationPlan)
-            }
-
-            item {
-                GradientHeader("Packing & Safety", "🎒")
-                Spacer(Modifier.height(20.dp))
-                PackingSafetyCard(itinerary.packagingAndSafety)
-            }
-
-            item {
-                GradientHeader("Budget Breakdown", "💸")
-                Spacer(Modifier.height(20.dp))
-                BudgetCard(itinerary.budgetBreakdown)
-            }
         }
     }
 }
@@ -203,6 +295,58 @@ fun ItineraryScreenUI(itinerary: Itinerary,showSaveButton:Boolean,download:()->U
 //----------------------------------------------------------
 //                     HEADER
 //----------------------------------------------------------
+@Composable
+fun CircularIconTabBar(
+    selectedIndex: Int,
+    onTabSelected: (Int) -> Unit
+) {
+    // Replace with your icon drawables
+    val icons = listOf(
+        Res.drawable.ic_itinerary,   // 🗓
+        Res.drawable.hotel,       // 🏨
+        Res.drawable.ic_transport,   // 🚗
+        Res.drawable.ic_food,        // 🍽
+        Res.drawable.ic_packing,     // 🎒
+        Res.drawable.ic_budget       // 💰
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(WindowInsets.statusBars.asPaddingValues())
+            .padding(vertical = 10.dp),
+        horizontalArrangement = Arrangement.SpaceEvenly
+    ) {
+        icons.forEachIndexed { index, iconRes ->
+
+            val isSelected = index == selectedIndex
+
+            Box(
+                modifier = Modifier
+                    .size(if (isSelected) 58.dp else 46.dp)
+                    .background(
+                        if (isSelected) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.surfaceVariant,
+                        CircleShape
+                    )
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { onTabSelected(index) }
+                    .padding(14.dp),           // image padding
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(resource = iconRes),
+                    contentDescription = null,
+                    modifier = Modifier.size(if (isSelected) 30.dp else 22.dp), // scale
+                )
+            }
+        }
+    }
+}
+
+
 
 @Composable
 fun GradientHeader(title: String, icon: String) {
@@ -242,7 +386,6 @@ fun TripSummaryCard(s: TripSummary) {
         elevation = CardDefaults.cardElevation(4.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 4.dp),
     ) {
         Column(Modifier.padding(18.dp)) {
 
@@ -280,7 +423,7 @@ fun SummaryRow(label: String, value: String) {
 //----------------------------------------------------------
 
 @Composable
-fun DayCard(day: DaywiseItinerary) {
+fun DayCard(day: DaywiseItinerary, showFoodRecommendations: Boolean = true) {
     Card(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surface),
@@ -317,13 +460,15 @@ fun DayCard(day: DaywiseItinerary) {
 
             day.timeline.forEach { TimelineItemView(it) }
 
-            Spacer(Modifier.height(16.dp))
-            Text("🍴 Food Recommendations", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
-            Spacer(Modifier.height(6.dp))
+            if(showFoodRecommendations){
+                Spacer(Modifier.height(16.dp))
+                Text("🍴 Food Recommendations", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Spacer(Modifier.height(6.dp))
 
-            day.foodRecommendations.forEach {
-                FoodCard(it)
-                Spacer(Modifier.height(10.dp))
+                day.foodRecommendations.forEach {
+                    FoodCard(it)
+                    Spacer(Modifier.height(10.dp))
+                }
             }
         }
     }
@@ -413,7 +558,7 @@ fun FoodCard(food: FoodRecommendation) {
 
         Column(Modifier.padding(14.dp)) {
 
-            Text("🍽 ${food.mealType}",
+            Text("🍽 ${food.mealType.uppercase()}",
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
@@ -535,7 +680,7 @@ fun BudgetCard(b: BudgetBreakdown) {
             SummaryRow("🎟 Sightseeing", b.sightseeing)
             SummaryRow("➕ Buffer", b.extraBuffer)
 
-            Divider(Modifier.padding(vertical = 8.dp))
+            Divider(modifier = Modifier.padding(vertical = 8.dp))
 
             SummaryRow("💰 Total", b.totalEstimatedCost)
         }
@@ -576,4 +721,3 @@ fun ErrorScreen(
             }
         }
 }
-

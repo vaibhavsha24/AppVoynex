@@ -32,7 +32,9 @@ data class TripSummary(
     @SerialName("best_time_to_visit")
     val bestTimeToVisit: String,
     @SerialName("overall_vibe")
-    val overallVibe: String
+    val overallVibe: String,
+    @SerialName("cover_image")
+    var coverImage: String?=null
 )
 
 @Serializable

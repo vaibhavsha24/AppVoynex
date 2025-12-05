@@ -11,6 +11,7 @@ import com.voynex.app.data.repository.ItineraryRepositoryImpl
 import com.voynex.app.domain.usecase.GenerateItineraryUseCase
 import com.voynex.app.domain.usecase.GetCategoriesUseCase
 import com.voynex.app.domain.usecase.GetCategoryDestinationsUseCase
+import com.voynex.app.domain.usecase.GetCoverImage
 import com.voynex.app.domain.usecase.GetHomeDestinationsUseCase
 import com.voynex.app.domain.usecase.GetSavedItinerary
 import com.voynex.app.preferences.SharedPref
@@ -39,8 +40,13 @@ class ViewModelFactory(private val sharedPref: SharedPref) : ViewModelProvider.F
         if (modelClass.isAssignableFrom(ItineraryViewModel::class.java)) {
             val openAiApi = OpenAiApiImpl()
             val itineraryRepository = ItineraryRepositoryImpl(openAiApi)
+            val pexelsApi = PexelsClient()
+            val destinationRepository = DestinationRepositoryImpl(pexelsApi, sharedPref)
+
             val generateItineraryUseCase = GenerateItineraryUseCase(itineraryRepository)
-            return ItineraryViewModel(generateItineraryUseCase,sharedPref) as T
+            val getCoverImage = GetCoverImage(destinationRepository)
+
+            return ItineraryViewModel(generateItineraryUseCase,getCoverImage,sharedPref) as T
         }
         if (modelClass.isAssignableFrom(SuggestedCountryViewModel::class.java)) {
             val pexelsApi = PexelsClient()

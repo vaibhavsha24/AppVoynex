@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.russhwolf.settings.Settings
 import com.voynex.app.domain.model.Itinerary
 import com.voynex.app.domain.usecase.GenerateItineraryUseCase
+import com.voynex.app.domain.usecase.GetCoverImage
 import com.voynex.app.preferences.SharedPref
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +18,7 @@ data class ItineraryUiState(
     val error: String? = null
 )
 
-class ItineraryViewModel(private val generateItineraryUseCase: GenerateItineraryUseCase,private val sharedPref: SharedPref) : ViewModel() {
+class ItineraryViewModel(private val generateItineraryUseCase: GenerateItineraryUseCase,private val getCoverImage: GetCoverImage,private val sharedPref: SharedPref) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ItineraryUiState())
     val uiState: StateFlow<ItineraryUiState> = _uiState
@@ -31,14 +32,16 @@ class ItineraryViewModel(private val generateItineraryUseCase: GenerateItinerary
         viewModelScope.launch {
             _uiState.value = ItineraryUiState(loading = true)
             try {
+                val image= getCoverImage(tripInput.destination)
                 val rawResponse = generateItineraryUseCase(tripInput)
-                
+
                 val cleanedJson = rawResponse
                     .substringAfter("```json")
                     .substringBeforeLast("```")
                     .trim()
                     
                 val itinerary = json.decodeFromString<Itinerary>(cleanedJson)
+                itinerary.tripSummary.coverImage = image.imageUrl
                 _uiState.value = ItineraryUiState(itinerary = itinerary)
             } catch (e: Exception) {
                 _uiState.value = ItineraryUiState(error = e.message)
@@ -55,5 +58,12 @@ class ItineraryViewModel(private val generateItineraryUseCase: GenerateItinerary
         uiState.value.itinerary?.let { itinerary ->
             sharedPref.saveItinerary(itinerary)
         }
+    }
+
+    fun deleteOffline(){
+        _uiState.value.itinerary?.tripSummary?.destination?.let { destination ->
+            sharedPref.deleteItinerary(destination);
+        }
+
     }
 }
