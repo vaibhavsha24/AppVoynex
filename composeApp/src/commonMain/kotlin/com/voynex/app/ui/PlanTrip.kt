@@ -1,6 +1,8 @@
 package com.voynex.app.ui
 
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.rememberScrollState
@@ -20,6 +22,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +48,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,6 +65,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -106,6 +111,8 @@ import voynex.composeapp.generated.resources.directions_car
 import voynex.composeapp.generated.resources.directions_bus
 import voynex.composeapp.generated.resources.ramen_dining
 import voynex.composeapp.generated.resources.eco
+import voynex.composeapp.generated.resources.next
+import voynex.composeapp.generated.resources.previous
 import voynex.composeapp.generated.resources.restaurant
 import voynex.composeapp.generated.resources.solo
 import voynex.composeapp.generated.resources.vegan
@@ -186,28 +193,57 @@ fun ImageCarousel(images: List<String>) {
 }
 
 @Composable
-fun ChoiceCard(text: String, icon: Painter, selected: Boolean, onClick: () -> Unit) {
+fun ChoiceCard(
+    text: String,
+    icon: Painter,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val bg by animateColorAsState(
+        if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+    )
+
+    val height by animateDpAsState(if (selected) 110.dp else 100.dp)
     Card(
         modifier = Modifier
-            .clickable(onClick = onClick)
-            .border(
-                width = 2.dp,
-                color = if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
-                shape = RoundedCornerShape(12.dp)
+            .padding(6.dp)
+            .height(height)
+            .clickable(
+                onClick = onClick,
+                indication = null,
+                interactionSource = remember { MutableInteractionSource() }
             )
-            .padding(8.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            .border(
+                2.dp,
+                if (selected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                RoundedCornerShape(18.dp)
+            ),
+        shape = RoundedCornerShape(18.dp),
+        colors = CardDefaults.cardColors(bg),
+        elevation = CardDefaults.cardElevation(if (selected) 8.dp else 1.dp),
     ) {
         Column(
-            modifier = Modifier.padding(12.dp),
-            horizontalAlignment = Alignment.CenterHorizontally) {
-            Image(painter = icon, contentDescription = null, modifier = Modifier.size(48.dp))
-            Spacer(Modifier.height(8.dp))
-            Text(text, fontWeight = FontWeight.SemiBold)
+            modifier = Modifier.padding(14.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Image(
+                painter = icon,
+                contentDescription = null,
+                modifier = Modifier.size(if (selected) 52.dp else 42.dp)
+            )
+
+            Spacer(Modifier.height(6.dp))
+
+            Text(
+                text,
+                fontWeight = FontWeight.Bold,
+                color = if (selected) Color.White else MaterialTheme.colorScheme.onSurface
+                // 🔥 text visible now
+            )
         }
     }
 }
+
 
 @OptIn(ExperimentalTime::class)
 @Composable
@@ -395,8 +431,15 @@ fun PlanTripScreen(
                                 if (preferences.contains(pref)) preferences.remove(pref)
                                 else preferences.add(pref)
                             },
-                            label = { Text(pref) }
+                            label = { Text(pref) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = MaterialTheme.colorScheme.secondary,      // 🔥 background when selected
+                                selectedLabelColor = Color.White,                                   // text when selected
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant,          // normal background
+                                labelColor = MaterialTheme.colorScheme.onSurfaceVariant             // normal label
+                            )
                         )
+
                     }
                 }
 
@@ -559,6 +602,9 @@ private fun DatePickerDialog(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { visibleMonth = visibleMonth.minusMonth() }) {
+                        Image(painter = painterResource(Res.drawable.previous), contentDescription = "Next",
+                            contentScale = ContentScale.FillBounds, colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                        )
                     }
 
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -567,6 +613,10 @@ private fun DatePickerDialog(
                     }
 
                     IconButton(onClick = { visibleMonth = visibleMonth.plusMonth() }) {
+                        Image(painter = painterResource(Res.drawable.next), contentDescription = "Next",
+                            contentScale = ContentScale.FillBounds, colorFilter = ColorFilter.tint(MaterialTheme.colorScheme.primary)
+                        )
+
                     }
                 }
 
@@ -666,13 +716,12 @@ private fun MonthGrid(
                         contentAlignment = Alignment.Center
                     ) {
                         if (dayNumber in 1..daysInMonth) {
-                            val date = LocalDate(yearMonth.year, yearMonth.month, dayNumber)
-                            DayCell(
-                                date,
-                                startDate,
-                                endDate,
-                                onClick = { onDayClick(date) }
-                            )
+                            val daysInMonth = yearMonth.numberOfDays // <-- Get real days of month
+
+                            if (dayNumber in 1..daysInMonth) {
+                                val date = LocalDate(yearMonth.year, yearMonth.month, dayNumber) // 🔥 Safe now
+                                DayCell(date, startDate, endDate) { onDayClick(date) }
+                            }
                         }
                     }
                 }

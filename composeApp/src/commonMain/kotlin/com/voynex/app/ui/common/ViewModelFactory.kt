@@ -6,6 +6,7 @@ import com.russhwolf.settings.Settings
 import com.voynex.app.data.remote.openai.MockOpenAiApi
 import com.voynex.app.data.remote.openai.OpenAiApiImpl
 import com.voynex.app.data.remote.pexels.PexelsClient
+import com.voynex.app.data.repository.AiAgentRepoImpl
 import com.voynex.app.data.repository.DestinationRepositoryImpl
 import com.voynex.app.data.repository.ItineraryRepositoryImpl
 import com.voynex.app.domain.usecase.GenerateItineraryUseCase
@@ -15,6 +16,7 @@ import com.voynex.app.domain.usecase.GetCoverImage
 import com.voynex.app.domain.usecase.GetHomeDestinationsUseCase
 import com.voynex.app.domain.usecase.GetSavedItinerary
 import com.voynex.app.preferences.SharedPref
+import com.voynex.app.ui.ChatViewModel
 import com.voynex.app.ui.DestinationViewModel
 import com.voynex.app.ui.HomeViewModel
 import com.voynex.app.ui.ItineraryViewModel
@@ -53,6 +55,14 @@ class ViewModelFactory(private val sharedPref: SharedPref) : ViewModelProvider.F
             val destinationRepository = DestinationRepositoryImpl(pexelsApi, sharedPref)
             val getCategoryDestinationsUseCase = GetCategoryDestinationsUseCase(destinationRepository)
             return SuggestedCountryViewModel(getCategoryDestinationsUseCase) as T
+
+        }
+
+        if (modelClass.isAssignableFrom(ChatViewModel::class.java)) {
+            val openAiApi = OpenAiApiImpl()
+            val aiAgentRepo = AiAgentRepoImpl(openAiApi)
+
+            return ChatViewModel(aiAgentRepo) as T
 
         }
         throw IllegalArgumentException("Unknown ViewModel class")

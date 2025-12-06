@@ -17,7 +17,9 @@ import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
 class OpenAiApiImpl : OpenAiApi {
+    val apiKey = ApiKey // Use the ApiKey
 
+    val baseUrl = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
     private val client = HttpClient(httpClientEngine()) {
         install(ContentNegotiation) {
             json(Json {
@@ -38,11 +40,11 @@ class OpenAiApiImpl : OpenAiApi {
     }
 
     override suspend fun generateItinerary(prompt: String): ItineraryResponse {
-        val apiKey = ApiKey // Use the ApiKey
 
         val request = GenerateContentRequest(
             contents = listOf(
                 Content(
+                    role = "User",
                     parts = listOf(
                         Part(text = prompt)
                     )
@@ -51,7 +53,7 @@ class OpenAiApiImpl : OpenAiApi {
         )
         println("Prompt: $request")
 
-        val response: GenerateContentResponse = client.post("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent") {
+        val response: GenerateContentResponse = client.post(baseUrl) {
             headers {
                 append("x-goog-api-key", apiKey)
             }
@@ -61,4 +63,16 @@ class OpenAiApiImpl : OpenAiApi {
 
         return ItineraryResponse(response.candidates.first().content.parts.first().text)
     }
+
+    override suspend fun callAiAgent(contents: List<Content>): GenerateContentResponse {
+        val request = GenerateContentRequest(contents = contents)
+        return client.post(baseUrl) {
+            headers {
+                append("x-goog-api-key", apiKey)
+            }
+            contentType(ContentType.Application.Json)
+            setBody(request)
+        }.body()
+    }
+
 }

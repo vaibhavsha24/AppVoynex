@@ -7,4 +7,6 @@ data class ItineraryResponse(val itinerary: String)
 
 interface OpenAiApi {
     suspend fun generateItinerary(prompt: String): ItineraryResponse
+
+    suspend fun callAiAgent(contents: List<Content>): GenerateContentResponse
 }

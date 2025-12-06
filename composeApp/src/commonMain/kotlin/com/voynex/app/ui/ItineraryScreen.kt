@@ -314,7 +314,7 @@ fun CircularIconTabBar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(WindowInsets.statusBars.asPaddingValues())
-            .padding(vertical = 10.dp),
+            .padding(bottom = 10.dp),
         horizontalArrangement = Arrangement.SpaceEvenly
     ) {
         icons.forEachIndexed { index, iconRes ->
